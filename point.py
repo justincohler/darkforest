@@ -3,8 +3,8 @@ from datetime import datetime
 class Point:
 
     def __init__(self, buy, sell):
-        self.buy_price=buy["amount"]
-        self.sell_price=sell["amount"]
+        self.buy_price=float(buy["amount"])
+        self.sell_price=float(sell["amount"])
         self.base=buy["base"]
         self.currency=buy["currency"]
         self.dt = datetime.now()
