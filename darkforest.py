@@ -2,7 +2,7 @@
 Dark Forest is an automated tracker and trader of electronic currencies.
 
 Author: Justin Cohler
-Copyright: 2017
+Created: 11/17/2017
 """
 from datetime import datetime, date, time, timedelta
 import time
