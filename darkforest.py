@@ -4,18 +4,17 @@ Dark Forest is an automated tracker and trader of electronic currencies.
 Author: Justin Cohler
 Created: 11/17/2017
 """
+import signal, sys
 from datetime import datetime, date, time, timedelta
 import time
 import requests, json
-import signal, sys
-import numpy as np
+import numpy as np, pandas as pd
 import matplotlib.pyplot as plt
-import pandas as pd
 from matplotlib import style
 from matplotlib.dates import DateFormatter, WeekdayLocator, DayLocator, MONDAY
+from matplotlib.finance import candlestick_ohlc
 from coinbase.wallet.client import Client
 from darkforest_trade_utils import setup_client
-from matplotlib.finance import candlestick_ohlc
 from point import *
 from ochl import *
 from config import Config
