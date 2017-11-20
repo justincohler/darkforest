@@ -4,30 +4,53 @@ These utilities represent a service layer for Coinbase interactions.
 Author: Justin Cohler
 Created: 11/17/2017
 """
-from coinbase.wallet.client import Client
 from config import Config
+from crycompare import History, Price
+from datetime import datetime
+import gdax
+import pandas as pd
 
-def setup_client():
+def setup_clients():
     """Initialize Coinbase client."""
-    client = Client(
-                Config.get("coinbase_API_KEY"),
-                Config.get("coinbase_SECRET"),
-                api_version='2017-11-10'
-            )
-    return client
+    auth_client = gdax.AuthenticatedClient(Config.get("gdax_API_KEY")
+                                            , Config.get("gdax_SECRET")
+                                            , Config.get("gdax_PASSPHRASE"))
 
-def buy(account, amount, currency, payment_method):
-    """Buy an amount of BTC through a specific currency and payment type."""
-    bought = account.buy(amount=amount,
-                    currency=currency,
-                    payment_method=payment_method.id)
+
+    public_client = gdax.PublicClient()
+    return public_client, auth_client
+
+def buy(client, bid_price, bid_size, currency_pair):
+    """Buy an amount (size) of cryptocurrency for a given bid price."""
+    bought = client.buy(price=bid_price,
+               size=bid_size,
+               product_id=currency_pair) #e.g. BTC-USD
 
     return bought
 
-def sell(account, amount, currency, payment_method):
-    """Sell an amount of BTC through a specific currency and payment type."""
-    sold = account.sell(amount=amount,
-                      currency=currency,
-                      payment_method=payment_method.id)
+def sell(client, ask_price, ask_size, currency_pair):
+    """Sell an amount (size) of cryptocurrency for a given ask price."""
+    sold = client.buy(price=ask_price,
+               size=ask_size,
+               product_id=currency_pair) #e.g. BTC-USD
 
     return sold
+
+def get_historic_coin_data(curr, coins):
+    """Return n days of historic data for the given coins and currency."""
+    h = History()
+
+    df = pd.DataFrame()
+    for coin in coins:
+        res = h.histoDay(from_curr=curr, to_curr=coin, allData=True)
+
+        if res['Response'].lower() != "success":
+            raise(AssertionError)
+
+        res = [dict(item, coin=coin) for item in res['Data']]
+        datum = pd.DataFrame(res)
+        df = df.append(datum)
+
+    df['time'] = df['time'].apply(lambda x: datetime.fromtimestamp(x))
+    df.set_index(['time', 'coin'])
+    return df

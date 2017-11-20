@@ -12,34 +12,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from config import Config
 from datetime import datetime, timedelta
 
-class CurrencyStreamListener(tweepy.StreamListener):
-    """Implement StreamListener to capture Currency-related tweets."""
-
-    def __init__(self):
-        """Overwrite init method to create btc and eth sentiment dataframes."""
-        super(CurrencyStreamListener, self).__init__()
-        self.df_btc=pd.DataFrame()
-        self.df_eth=pd.DataFrame()
-
-    def on_status(self, status):
-        """Overwrite on_status method to analyze tweet sentiments."""
-        words = status.text.split()
-        sentiment = get_sentiment(words)
-        dt = datetime.now()
-        if "bitcoin" in status.lower():
-            btc = {"sentiment": sentiment, "dt": dt}
-            self.df_btc.append(pd.DataFrame(btc, index=["dt"]))
-
-        if "ethereum" in status.lower():
-            etc = {"sentiment": sentiment, "dt": dt}
-            self.df_eth.append(pd.DataFrame(eth, index=["dt"]))
-
-    def get_daily_sentiments(d):
-        """Return the sentiment for a given date."""
-        s_btc = self.df_btc[(self.df_btc['dt'] > d) & (self.df_btc['dt'] < d + timedelta(days=1)].groupby(df.index.date).mean()
-        s_eth = self.df_eth[(self.df_btc['dt'] > d) & (self.df_btc['dt'] < d + timedelta(days=1)].groupby(df.index.date).mean()
-
-        return s_btc, s_eth
+analyzer = SentimentIntensityAnalyzer()
 
 def create_twitter_api():
     """Create a twitter api client wrapper."""
@@ -53,26 +26,24 @@ def create_twitter_api():
 
     return api
 
-def create_twitter_stream():
-    """Return a Twitter stream to constantly analyze sentiments for various electronic currencies."""
-    api = create_twitter_api()
-    streamListener = CurrencyStreamListener()
-    twitterStream = tweepy.Stream(auth = api.auth, listener=streamListener())
-
-def create_currency_stream():
-    """Stream tweets related to Bitcoin and Ethereum for analysis."""
-    twitterStream = create_twitter_stream()
-    twitterStream.filter(track=['bitcoin','ethereum'], async=True)
-
-    return twitterStream
-
-def calculate_sentiment(words):
+def calculate_sentiment(self, text):
     """Take a list of words and return a sentimental score."""
-    analyzer = SentimentIntensityAnalyzer()
-    total_compound = 0
+    return self.analyzer.polarity_scores(text)
 
-    for w in words:
-        score = analyzer.polarity_scores(w)
-        total_compound += score['compound']
+def make_sentiment(tweet):
+    return {"dt": tweet.created_at, "tweet": tweet.text, "sentiment": analyzer.polarity_scores(tweet.text)}
 
-    return total_compound
+def get_currency_tweets(api):
+    """
+    Return tweets since since_days regarding various cryptocurrencies.
+
+    since_days defaults to 7 days if not otherwise specified.
+    """
+    query = "bitcoin OR ethereum OR cryptocurrency"
+
+    tweets = pd.DataFrame()
+    for block in tweepy.Cursor(api.search,q=query, count=100).pages():
+        formatted = list(map(make_sentiment, block))
+        tweets.append(formatted)
+        print(formatted[-1])
+    return tweets
