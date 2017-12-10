@@ -26,11 +26,6 @@ def exit_handler(signum, frame):
 signal.signal(signal.SIGINT, exit_handler)
 
 xs = []
-ybuys = []
-ysells = []
-ykelt_up = []
-ykelt_dn = []
-
 df = pd.DataFrame()
 
 def setup_plot():
@@ -76,24 +71,32 @@ if __name__ == "__main__":
     td = timedelta(days=31)
     last_period = today - td
 
+    btc_ticker = pd.DataFrame()
+    eth_ticker = pd.DataFrame()
+
     gdax_pub, gdax_auth = setup_clients()
 
     fig, ax = setup_plot()
 
     while True:
-        btc_ticker = gdax_pub.get_product_ticker(product_id='BTC-USD')
-        btc_ticker['coin'] = 'BTC'
-        eth_ticker = gdax_pub.get_product_ticker(product_id='ETH-USD')
-        eth_ticker['coin'] = 'ETH'
-        print(btc_ticker)
-        print(eth_ticker)
+        btc_tick = gdax_pub.get_product_ticker(product_id='BTC-USD')
+        btc_tick['coin'] = 'BTC'
+        btc_tick['time'] = pd.to_datetime(btc_tick['time'])
+
+        eth_tick = gdax_pub.get_product_ticker(product_id='ETH-USD')
+        eth_tick['coin'] = 'ETH'
+        eth_tick['time'] = pd.to_datetime(eth_tick['time'])
 
         # Create time series index for all points
-        df_btc = pd.DataFrame(btc_ticker, index=['time'])
-        df_eth = pd.DataFrame(btc_ticker, index=['time'])
-        df_rt = df.append(datum)
+        df_btc = pd.DataFrame(btc_tick, index=['time'])
+        df_eth = pd.DataFrame(eth_tick, index=['time'])
 
-        update_multiline_plot(df_historic, df_rt)
+        btc_ticker = btc_ticker.append(df_btc)
+        eth_ticker = eth_ticker.append(df_eth)
+
+        print(eth_ticker)
+        print(btc_ticker)
+        #update_multiline_plot(df_historic, df_rt)
 
         time.sleep(1)
         plt.pause(1)

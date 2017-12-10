@@ -40,7 +40,6 @@ def get_historic_coin_data(curr, coins):
     """Return n days of historic data for the given coins and currency."""
     h = History()
 
-    df = pd.DataFrame()
     for coin in coins:
         res = h.histoDay(from_curr=curr, to_curr=coin, allData=True)
 
@@ -48,9 +47,15 @@ def get_historic_coin_data(curr, coins):
             raise(AssertionError)
 
         res = [dict(item, coin=coin) for item in res['Data']]
-        datum = pd.DataFrame(res)
-        df = df.append(datum)
+        for d in res:
+            d['time'] == pd.to_datetime(d['time'])
 
-    df['time'] = df['time'].apply(lambda x: datetime.fromtimestamp(x))
-    df.set_index(['time', 'coin'])
+    return res
+
+def atr(df, window):
+
+    i = 0
+
+    while i < df.index[-1]:
+        tr = max(df.get_value(i+1, ''))
     return df
