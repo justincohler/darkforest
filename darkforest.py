@@ -25,9 +25,6 @@ def exit_handler(signum, frame):
 
 signal.signal(signal.SIGINT, exit_handler)
 
-xs = []
-df = pd.DataFrame()
-
 def setup_plot():
     """Return a figure and a plot, ax for BTC data over time."""
     style.use('fivethirtyeight')
@@ -67,12 +64,10 @@ def update_multiline_plot(df_historic, df_rt):
 
 if __name__ == "__main__":
     df_historic = get_historic_coin_data("USD", ["BTC", "ETH"])
-    today = datetime.now()
-    td = timedelta(days=31)
-    last_period = today - td
-
+    print(df_historic[0])
     btc_ticker = pd.DataFrame()
     eth_ticker = pd.DataFrame()
+    xs = []
 
     gdax_pub, gdax_auth = setup_clients()
 
@@ -94,8 +89,8 @@ if __name__ == "__main__":
         btc_ticker = btc_ticker.append(df_btc)
         eth_ticker = eth_ticker.append(df_eth)
 
-        print(eth_ticker)
-        print(btc_ticker)
+        #print(eth_ticker)
+        #print(btc_ticker)
         #update_multiline_plot(df_historic, df_rt)
 
         time.sleep(1)
