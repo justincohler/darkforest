@@ -18,6 +18,11 @@ from point import *
 from ochl import *
 from config import Config
 
+ETH = "ETH"
+BTC = "BTC"
+USD = "USD"
+PERIOD = 20
+
 def exit_handler(signum, frame):
     """Close all threads running in background due to wait calls in the trader."""
     print("Interrupted by %d, shutting down" % signum)
@@ -32,7 +37,6 @@ def setup_plot():
     alldays = DayLocator()
     weekFormatter = DateFormatter('%b %d')  # e.g., Jan 12
     dayFormatter = DateFormatter('%b %d')
-
 
     plt.ion()
     fig  = plt.figure()
@@ -49,49 +53,62 @@ def setup_plot():
 
     return fig, ax
 
-def update_multiline_plot(df_historic, df_rt):
+def update_plot(historic_dfs, rt_dfs):
     """Plot given points on a line plot on the global ax plot."""
     '''TODO - make plot with updated parameters.'''
-    xs.append(point.dt)
-    ybuys.append(point.buy_price)
-    ysells.append(point.sell_price)
+    for df in historic_dfs:
+        df.set_index('time')
+        print(df.tail)
+        df.plot(x='time', y='close')
 
-    ax.plot(xs, ybuys, 'c')
-    ax.plot(xs, ysells, 'm')
+    for df in rt_dfs:
+        df.set_index('time')
+        df.plot(x='time', y='ask')
 
-    ax.xaxis_date()
-    ax.autoscale_view(True, True, True)
+    plt.show()
+
 
 if __name__ == "__main__":
-    df_historic = get_historic_coin_data("USD", ["BTC", "ETH"])
-    print(df_historic[0])
-    btc_ticker = pd.DataFrame()
-    eth_ticker = pd.DataFrame()
-    xs = []
-
     gdax_pub, gdax_auth = setup_clients()
+    #fig, ax = setup_plot()
+    historic = get_historic_coin_data(gdax_pub, USD, [BTC, ETH])
+    #historic['time'] = pd.to_datetime(historic['time'])
+    for doc in historic:
+        for k, v in doc.items():
+            if k not in ['coin', 'time']:
+                doc[k] = float(v)
+            else:
+                doc[k] = v
 
-    fig, ax = setup_plot()
+    btc_rt = pd.DataFrame()
+    df_historic = pd.DataFrame.from_dict(historic)
+
+    btc_historic = df_historic[df_historic['coin'] == BTC]
+    print(btc_historic.tail)
+    btc_historic['rolling_mean'] = btc_historic.set_index('time').rolling(PERIOD).mean()
+    btc_historic['rolling_std'] = btc_historic.set_index('time').rolling(PERIOD).std()
+    btc_historic['upper'] = btc_historic['rolling_mean'] + btc_historic['rolling_std']
+    btc_historic['lower'] = btc_historic['rolling_mean'] - btc_historic['rolling_std']
+
+    print(btc_historic.tail)
+    plt.plot(xs, ys)
+    plt.show()
 
     while True:
         btc_tick = gdax_pub.get_product_ticker(product_id='BTC-USD')
-        btc_tick['coin'] = 'BTC'
+        btc_tick['coin'] = BTC
         btc_tick['time'] = pd.to_datetime(btc_tick['time'])
-
-        eth_tick = gdax_pub.get_product_ticker(product_id='ETH-USD')
-        eth_tick['coin'] = 'ETH'
-        eth_tick['time'] = pd.to_datetime(eth_tick['time'])
 
         # Create time series index for all points
         df_btc = pd.DataFrame(btc_tick, index=['time'])
-        df_eth = pd.DataFrame(eth_tick, index=['time'])
 
-        btc_ticker = btc_ticker.append(df_btc)
-        eth_ticker = eth_ticker.append(df_eth)
+        btc_rt = btc_rt.append(df_btc)
 
-        #print(eth_ticker)
-        #print(btc_ticker)
-        #update_multiline_plot(df_historic, df_rt)
+        # FIXME
+        btc_historic.set_index('time')
+        print(btc_historic.dtypes)
+
+
 
         time.sleep(1)
-        plt.pause(1)
+        #plt.pause(1)

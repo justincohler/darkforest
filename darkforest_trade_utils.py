@@ -9,6 +9,7 @@ from crycompare import History, Price
 from datetime import datetime
 import gdax
 import pandas as pd
+import numpy as np
 
 def setup_clients():
     """Initialize Coinbase client."""
@@ -36,21 +37,34 @@ def sell(client, ask_price, ask_size, currency_pair):
 
     return sold
 
+def get_gdax_history(client, curr, coins):
+    """Return historic data for the given coins and currency."""
+    coin_history = []
+    df_history = pd.DataFrame()
+    for coin in coins:
+        res = client.get_product_historic_rates(coin+"-"+curr)
+
+        df = pd.DataFrame(res, columns=('time', 'low', 'high', 'open', 'close', 'volume'))
+        df['coin'] = coin
+        df_history = df_history.append(df)
+
+    return df_history
+
 def get_historic_coin_data(curr, coins):
     """Return n days of historic data for the given coins and currency."""
     h = History()
-
+    historic_data = []
     for coin in coins:
-        res = h.histoDay(from_curr=curr, to_curr=coin, allData=True)
+        res =  h.histoDay(from_curr=curr, to_curr=coin, allData=True)
 
         if res['Response'].lower() != "success":
             raise(AssertionError)
 
         res = [dict(item, coin=coin) for item in res['Data']]
-        for d in res:
-            d['time'] == pd.to_datetime(d['time'])
 
-    return res
+        historic_data.extend(res)
+
+    return historic_data
 
 def atr(df, window):
 
